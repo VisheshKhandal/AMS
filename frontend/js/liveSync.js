@@ -13,7 +13,7 @@ const LiveSync = (() => {
     if (host === 'localhost' || host === '127.0.0.1') {
       return 'ws://localhost:5000';
     }
-    return 'wss://attendance-management-system-xm2e.onrender.com';
+    return 'wss://ams-32ig.onrender.com';
   }
 
   function getWsUrl() {
