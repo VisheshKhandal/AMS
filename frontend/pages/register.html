@@ -3,84 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register — Attendance Tracker</title>
-  <link rel="stylesheet" href="../css/global.css">
-  <link rel="stylesheet" href="../css/auth.css">
+  <title>Create account — AttendanceHub</title>
+  <script>window.location.replace('login.html#register');</script>
+  <meta http-equiv="refresh" content="0;url=login.html#register">
 </head>
-<body data-page="register">
-  <main class="auth-page page-enter">
-    <div class="auth-container">
-      <div class="auth-card">
-        <div class="auth-header">
-          <div class="auth-logo">AT</div>
-          <h1 class="auth-title">Create account</h1>
-          <p class="auth-subtitle">Start tracking attendance for your classes</p>
-        </div>
-
-        <p id="authError" class="auth-error" hidden></p>
-        <form id="registerForm" novalidate>
-          <div class="form-group">
-            <label class="form-label" for="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              class="form-input"
-              placeholder="Your name"
-              autocomplete="username"
-              required
-            >
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              class="form-input"
-              placeholder="teacher@school.com"
-              autocomplete="email"
-              required
-            >
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              class="form-input"
-              placeholder="Create a strong password"
-              autocomplete="new-password"
-              required
-            >
-          </div>
-// "btn btn-primary btn-block btn-lg" : This is reusable design system.This is scalable CSS architecture.
-<!-- 
-Example Thinking
-Class      Purpose
-----------  ------------------------------------------------------------
-btn	    - base button styles
-btn-primary	- blue color
-btn-block	- full width
-btn-lg	  large size
--->
-          <button type="submit" class="btn btn-primary btn-block btn-lg">
-            Create account
-          </button>
-        </form>
-
-        <p class="auth-footer">
-          Already have an account?
-          <a href="login.html">Sign in</a>
-        </p>
-      </div>
-    </div>
-  </main>
-
-  <script src="../js/api.js"></script>
-  <script src="../js/auth.js"></script>
+<body>
+  <p>Redirecting to <a href="login.html#register">create account</a>…</p>
 </body>
 </html>

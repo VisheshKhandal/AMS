@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — Attendance Tracker</title>
+  <title>Dashboard — AttendanceHub</title>
   <link rel="stylesheet" href="../css/global.css">
   <link rel="stylesheet" href="../css/dashboard.css">
+  <script src="../js/preferences.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body data-page="dashboard">
-  // This is the ROOT UI CONTAINER. This is the main container that contains the sidebar and the main content.
   <div class="app-layout">
-    // This is the SIDEBAR UI CONTAINER. This is the container that contains the sidebar navigation.
     <aside class="sidebar" id="sidebar" aria-label="Main navigation">
       <div class="sidebar-logo">
-        <div class="sidebar-logo-icon">AT</div>
-        <span class="sidebar-logo-text">Attendance</span>
+        <div class="sidebar-logo-icon">AH</div>
+        <span class="sidebar-logo-text">AttendanceHub</span>
       </div>
       <nav class="sidebar-nav">
         <a href="dashboard.html" class="sidebar-link active" data-nav="dashboard" data-tooltip="Dashboard">
@@ -59,7 +59,6 @@
             <div class="teacher-avatar" id="teacherAvatar">V</div>
             <span class="teacher-name" id="teacherName">Teacher</span>
           </div>
-          <a href="#" class="btn btn-ghost btn-sm" data-logout>Logout</a>
         </div>
       </header>
 
@@ -71,7 +70,7 @@
               <div class="hero-meta">
                 <span class="hero-date" id="heroDate">—</span>
                 <span class="hero-clock" id="heroClock">—</span>
-                <span class="live-pill"><span class="live-dot"></span> Live</span>
+                <span class="live-pill is-disconnected"><span class="live-dot"></span> <span class="live-label">Offline</span></span>
               </div>
               <h2 class="hero-greeting" id="heroGreeting">Welcome back 👋</h2>
               <p class="hero-insight" id="heroInsight">Loading your dashboard…</p>
@@ -87,7 +86,7 @@
                   <div class="stat-info">
                     <p class="stat-label">Total Classes</p>
                     <p class="stat-value" id="statClasses" data-count="0">0</p>
-                    <p class="stat-change live-indicator"><span class="pulse-dot"></span> Synced live</p>
+                    <p class="stat-trend neutral" id="statClassesTrend" hidden><span class="stat-trend-arrow">→</span> <span class="stat-trend-text">—</span></p>
                   </div>
                 </article>
                 <article class="stat-card" data-stat="students">
@@ -95,7 +94,7 @@
                   <div class="stat-info">
                     <p class="stat-label">Total Students</p>
                     <p class="stat-value" id="statStudents" data-count="0">0</p>
-                    <p class="stat-change live-indicator"><span class="pulse-dot"></span> Synced live</p>
+                    <p class="stat-trend neutral" id="statStudentsTrend" hidden><span class="stat-trend-arrow">→</span> <span class="stat-trend-text">—</span></p>
                   </div>
                 </article>
                 <article class="stat-card" data-stat="today">
@@ -103,7 +102,7 @@
                   <div class="stat-info">
                     <p class="stat-label">Marked Today</p>
                     <p class="stat-value" id="statToday" data-count="0">0</p>
-                    <p class="stat-change live-indicator"><span class="pulse-dot"></span> Synced live</p>
+                    <p class="stat-trend neutral" id="statTodayTrend" hidden><span class="stat-trend-arrow">→</span> <span class="stat-trend-text">—</span></p>
                   </div>
                 </article>
                 <article class="stat-card" data-stat="percentage">
@@ -111,7 +110,7 @@
                   <div class="stat-info">
                     <p class="stat-label">Attendance Rate</p>
                     <p class="stat-value" id="statPercentage" data-count="0" data-suffix="%">0%</p>
-                    <p class="stat-change live-indicator"><span class="pulse-dot"></span> Synced live</p>
+                    <p class="stat-trend neutral" id="statPercentageTrend" hidden><span class="stat-trend-arrow">→</span> <span class="stat-trend-text">—</span></p>
                   </div>
                 </article>
               </section>
@@ -119,7 +118,9 @@
               <section class="charts-section" id="chartsSection">
                 <article class="card chart-card chart-card-wide">
                   <h3 class="card-title">Weekly attendance trend</h3>
-                  <div class="line-chart-wrap" id="weeklyLineChart" aria-label="Weekly line chart"></div>
+                  <div class="chart-canvas-wrap" id="weeklyLineChart" aria-label="Weekly attendance trend chart">
+                    <canvas id="weeklyAreaChart"></canvas>
+                  </div>
                 </article>
 
                 <article class="card chart-card">
@@ -130,23 +131,25 @@
 
                 <article class="card chart-card">
                   <h3 class="card-title">Class comparison</h3>
-                  <div class="class-compare-list" id="classCompareChart"></div>
+                  <div class="chart-canvas-wrap chart-canvas-compact" id="classCompareChart" aria-label="Class comparison chart">
+                    <canvas id="classBarChart"></canvas>
+                  </div>
                 </article>
 
                 <article class="card chart-card">
                   <h3 class="card-title">Present vs absent</h3>
                   <div class="pie-chart-wrap" id="distributionPie" aria-label="Distribution pie chart"></div>
                 </article>
-              </section>
 
-              <section class="timeline-section">
-                <div class="card timeline-card">
-                  <div class="card-header timeline-header">
-                    <h3 class="card-title">Live activity timeline</h3>
-                    <button type="button" class="btn btn-ghost btn-sm" id="refreshDashboardBtn" title="Refresh">↻ Refresh</button>
+                <article class="card chart-card streak-card" id="streakCard" aria-label="Attendance streak">
+                  <div class="streak-card-header">
+                    <h3 class="card-title">Attendance streak</h3>
+                    <span class="streak-flame" aria-hidden="true">🔥</span>
                   </div>
-                  <ul class="timeline-feed" id="activityTimeline"></ul>
-                </div>
+                  <div class="streak-card-body" id="streakCardBody">
+                    <p class="empty-state">Loading streak…</p>
+                  </div>
+                </article>
               </section>
             </div>
 
@@ -179,12 +182,23 @@
               </article>
             </aside>
           </div>
+
+          <section class="timeline-section">
+            <div class="card timeline-card">
+              <div class="card-header timeline-header">
+                <h3 class="card-title">Live activity timeline</h3>
+                <button type="button" class="btn btn-ghost btn-sm" id="refreshDashboardBtn" title="Refresh">↻ Refresh</button>
+              </div>
+              <ul class="timeline-feed" id="activityTimeline"></ul>
+            </div>
+          </section>
         </div>
       </main>
     </div>
   </div>
 
   <script src="../js/api.js"></script>
+  <script src="../js/liveSync.js"></script>
   <script src="../js/dashboard.js"></script>
 </body>
 </html>

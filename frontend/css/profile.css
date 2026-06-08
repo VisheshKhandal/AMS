@@ -679,8 +679,8 @@
 /* —— Overview grid —— */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(120px, 1fr) minmax(0, 1fr));
-  gap: 0.75rem 1.5rem;
+  grid-template-columns: minmax(110px, 140px) minmax(0, 1fr);
+  gap: 0.625rem 1.25rem;
   font-size: 0.9375rem;
 }
 
@@ -692,6 +692,9 @@
 .info-grid dd {
   color: var(--text-primary);
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* —— Security accordions —— */
@@ -1183,6 +1186,7 @@
   padding: 1rem 1.25rem;
   border-top: 1px solid var(--border-light);
   background: rgba(15, 23, 42, 0.5);
+  flex-shrink: 0;
   animation: slideUp 0.25s ease;
 }
 
@@ -1215,20 +1219,6 @@ body.edit-panel-open {
 .profile-form textarea.form-input {
   resize: vertical;
   min-height: 5rem;
-}
-
-/* —— Light theme (preferences) —— */
-html[data-theme='light'] {
-  --bg-primary: #f1f5f9;
-  --bg-card: #ffffff;
-  --bg-card-hover: #e2e8f0;
-  --bg-sidebar: #ffffff;
-  --bg-navbar: rgba(255, 255, 255, 0.9);
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --border: #cbd5e1;
-  --border-light: rgba(15, 23, 42, 0.08);
 }
 
 @media (max-width: 1024px) {

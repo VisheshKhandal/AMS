@@ -14,8 +14,7 @@ let securityLoaded = false;
 document.addEventListener('DOMContentLoaded', async () => {
   await AppLayout.init('profile');
   bindProfileEvents();
-  applyThemeFromStorage();
-  applyAccentFromStorage();
+  syncPreferenceControlsFromStorage();
   applyAttendancePrefsFromStorage();
   bindSecurityAccordions();
   bindPreferenceControls();
@@ -143,12 +142,13 @@ function renderProfileView(user, stats) {
 
   setText('headerStatClasses', classes);
   setText('headerStatStudents', students);
-  setText('headerStatRate', `${stats.attendancePercentage ?? 0}%`);
+  const ratePct = Math.round((stats.attendancePercentage ?? 0) * 10) / 10;
+  setText('headerStatRate', `${ratePct}%`);
   setText('headerStatToday', stats.markedToday ?? 0);
 
   setText('asideStatClasses', classes);
   setText('asideStatStudents', students);
-  setText('asideStatRate', `${stats.attendancePercentage ?? 0}%`);
+  setText('asideStatRate', `${ratePct}%`);
   setText('asideStatToday', stats.markedToday ?? 0);
 
   setAvatarEl('profileAvatarLarge', user.profileImage, displayName);
@@ -250,8 +250,7 @@ function bindPreferenceControls() {
   document.querySelectorAll('.accent-swatch').forEach((btn) => {
     btn.addEventListener('click', () => {
       const accent = btn.dataset.accent || 'blue';
-      document.documentElement.setAttribute('data-accent', accent);
-      localStorage.setItem('appAccent', accent);
+      UserPreferences.setAccent(accent);
       document.querySelectorAll('.accent-swatch').forEach((s) => {
         s.classList.toggle('active', s === btn);
       });
@@ -266,12 +265,22 @@ function bindPreferenceControls() {
   );
 }
 
-function applyAccentFromStorage() {
-  const accent = localStorage.getItem('appAccent') || 'blue';
-  document.documentElement.setAttribute('data-accent', accent);
+function syncPreferenceControlsFromStorage() {
+  UserPreferences.applyAll();
+  const theme = UserPreferences.applyTheme();
+  const toggle = document.getElementById('themeToggle');
+  const label = document.getElementById('themeLabel');
+  if (toggle) toggle.checked = theme === 'light';
+  if (label) label.textContent = theme === 'light' ? 'Light' : 'Dark';
+
+  const accent = UserPreferences.applyAccent();
   document.querySelectorAll('.accent-swatch').forEach((s) => {
     s.classList.toggle('active', s.dataset.accent === accent);
   });
+
+  const compact = localStorage.getItem('sidebarCollapsed') === 'true';
+  const compactPref = document.getElementById('compactSidebarPref');
+  if (compactPref) compactPref.checked = compact;
 }
 
 function applyAttendancePrefsFromStorage() {
@@ -610,7 +619,6 @@ function hideEditPanel() {
   panel?.classList.remove('open');
   panel?.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('edit-panel-open');
-  document.getElementById('editPanelFooter')?.setAttribute('hidden', '');
 }
 
 function discardEdit() {
@@ -648,9 +656,11 @@ function isFormDirty() {
 }
 
 function checkFormDirty() {
-  const footer = document.getElementById('editPanelFooter');
-  if (!footer) return;
-  footer.hidden = !isFormDirty();
+  const dirty = isFormDirty();
+  const saveBtn = document.getElementById('saveProfileBtn');
+  const discardBtn = document.getElementById('discardEditBtn');
+  if (saveBtn) saveBtn.disabled = !dirty;
+  if (discardBtn) discardBtn.disabled = !dirty;
 }
 
 async function handleImageSelect(e) {
@@ -809,23 +819,9 @@ async function logoutAllDevices() {
   }
 }
 
-function applyThemeFromStorage() {
-  const theme = localStorage.getItem('appTheme') || 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
-  const toggle = document.getElementById('themeToggle');
-  const label = document.getElementById('themeLabel');
-  if (toggle) toggle.checked = theme === 'light';
-  if (label) label.textContent = theme === 'light' ? 'Light' : 'Dark';
-
-  const compact = localStorage.getItem('sidebarCollapsed') === 'true';
-  const compactPref = document.getElementById('compactSidebarPref');
-  if (compactPref) compactPref.checked = compact;
-}
-
 function onThemeToggle(e) {
   const theme = e.target.checked ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('appTheme', theme);
+  UserPreferences.setTheme(theme);
   const label = document.getElementById('themeLabel');
   if (label) label.textContent = theme === 'light' ? 'Light' : 'Dark';
   Toast.info(`${theme === 'light' ? 'Light' : 'Dark'} theme applied`);
@@ -880,15 +876,31 @@ function formatActivityDate(d) {
 
 function formatRelativeTime(d) {
   if (!d) return '';
-  const diff = Date.now() - new Date(d).getTime();
+  const date = new Date(d);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday);
+  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+
+  const diff = Date.now() - date.getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return formatDateTime(d);
+
+  let relative;
+  if (mins < 1) relative = 'Just now';
+  else if (mins < 60) relative = `${mins}m ago`;
+  else {
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) relative = `${hrs}h ago`;
+    else {
+      const days = Math.floor(hrs / 24);
+      if (days < 7) relative = `${days}d ago`;
+      else return formatDateTime(d);
+    }
+  }
+
+  if (date >= startOfToday) return `Today · ${relative}`;
+  if (date >= startOfYesterday) return `Yesterday · ${relative}`;
+  return relative;
 }
 
 function setText(id, text) {

@@ -6,6 +6,38 @@ let classesCache = [];
 let studentsInClass = [];
 let markedForDate = new Map();
 let classAttendanceCache = [];
+let autoSaveTimer = null;
+
+function getAttendancePrefs() {
+  if (typeof UserPreferences !== 'undefined') {
+    return UserPreferences.getAttendancePrefsWithDefaults();
+  }
+  return {
+    defaultMode: 'present',
+    editPast: false,
+    autoSave: true,
+    confirmPopup: true,
+  };
+}
+
+function todayIso() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function applyEditPastRestrictions() {
+  const prefs = getAttendancePrefs();
+  const dateInput = document.getElementById('attendanceDate');
+  if (!dateInput) return;
+
+  if (prefs.editPast) {
+    dateInput.removeAttribute('min');
+  } else {
+    dateInput.min = todayIso();
+    if (dateInput.value && dateInput.value < dateInput.min) {
+      dateInput.value = dateInput.min;
+    }
+  }
+}
 
 function getSelectedDate() {
   const input = document.getElementById('attendanceDate');
@@ -25,6 +57,12 @@ function initStatusToggles(root = document) {
       if (!group) return;
       group.querySelectorAll('.status-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
+
+      const prefs = getAttendancePrefs();
+      if (prefs.autoSave) {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(() => saveAttendance({ silent: true }), 600);
+      }
     });
   });
 }
@@ -47,10 +85,12 @@ async function initMarkAttendancePage() {
   const dateInput = document.getElementById('attendanceDate');
 
   if (dateInput && !dateInput.value) {
-    dateInput.value = new Date().toISOString().split('T')[0];
+    dateInput.value = todayIso();
   }
+  applyEditPastRestrictions();
 
   dateInput?.addEventListener('change', () => {
+    applyEditPastRestrictions();
     loadStudentsForAttendance();
     renderAttendanceCalendar();
   });
@@ -121,11 +161,14 @@ async function loadStudentsForAttendance() {
       return;
     }
 
+    const prefs = getAttendancePrefs();
+    const defaultPresent = prefs.defaultMode !== 'absent';
+
     tbody.innerHTML = studentsInClass
       .map((s) => {
         const existingStatus = markedForDate.get(s._id);
-        const isPresent = existingStatus !== 'Absent';
         const alreadyMarked = markedForDate.has(s._id);
+        const isPresent = alreadyMarked ? existingStatus === 'Present' : defaultPresent;
         return `
         <tr data-student-id="${s._id}" data-class-id="${classId}">
           <td>${s.rollNumber}</td>
@@ -174,13 +217,17 @@ function renderAttendanceCalendar() {
 
   const monthLabel = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   let cells = '';
+  const prefs = getAttendancePrefs();
+  const minDate = prefs.editPast ? null : todayIso();
+
   for (let day = 1; day <= daysInMonth; day += 1) {
     const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const stats = summaryByDay[iso];
     const isSelected = iso === selectedDate;
+    const isPast = minDate && iso < minDate;
     const hint = stats ? `P:${stats.P} A:${stats.A}` : '—';
     cells += `
-      <button type="button" class="cal-day ${isSelected ? 'selected' : ''}" data-date="${iso}" title="${hint}">
+      <button type="button" class="cal-day ${isSelected ? 'selected' : ''} ${isPast ? 'disabled' : ''}" data-date="${iso}" title="${hint}" ${isPast ? 'disabled' : ''}>
         <span class="cal-num">${day}</span>
         ${stats ? `<span class="cal-mini">${stats.P > 0 ? 'P' : ''}${stats.A > 0 ? 'A' : ''}</span>` : ''}
       </button>`;
@@ -203,20 +250,34 @@ function renderAttendanceCalendar() {
   });
 }
 
-async function saveAttendance() {
+async function saveAttendance({ silent = false } = {}) {
   const classId = document.getElementById('attendanceClass')?.value;
   const selectedDate = getSelectedDate();
   const btn = document.getElementById('saveAttendanceBtn');
   const rows = document.querySelectorAll('tbody tr[data-student-id]');
+  const prefs = getAttendancePrefs();
 
   if (!classId) {
-    Toast.error('Select a class first.');
+    if (!silent) Toast.error('Select a class first.');
     return;
   }
 
   if (!selectedDate) {
-    Toast.error('Select a date.');
+    if (!silent) Toast.error('Select a date.');
     return;
+  }
+
+  if (!prefs.editPast && selectedDate < todayIso()) {
+    if (!silent) Toast.error('Editing past attendance is disabled in your preferences.');
+    return;
+  }
+
+  if (!silent && prefs.confirmPopup) {
+    const ok = await ConfirmModal.ask(
+      `Save attendance for ${rows.length} student(s) on ${selectedDate}?`,
+      { title: 'Confirm attendance', confirmLabel: 'Save', danger: false }
+    );
+    if (!ok) return;
   }
 
   const toMark = [];
@@ -228,11 +289,11 @@ async function saveAttendance() {
   });
 
   if (!toMark.length) {
-    Toast.info('No students to save.');
+    if (!silent) Toast.info('No students to save.');
     return;
   }
 
-  setButtonLoading(btn, true, 'Saving attendance…');
+  if (!silent) setButtonLoading(btn, true, 'Saving attendance…');
   let success = 0;
   const errors = [];
 
@@ -245,14 +306,16 @@ async function saveAttendance() {
     }
   }
 
-  setButtonLoading(btn, false);
+  if (!silent) setButtonLoading(btn, false);
 
   if (success > 0) {
-    Toast.success(`Attendance saved for ${success} student(s) on ${selectedDate}`);
+    if (!silent) {
+      Toast.success(`Attendance saved for ${success} student(s) on ${selectedDate}`);
+    }
     await loadStudentsForAttendance();
     renderAttendanceCalendar();
   }
-  if (errors.length) {
+  if (errors.length && !silent) {
     Toast.error(errors[0]);
   }
 }

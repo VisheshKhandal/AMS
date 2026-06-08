@@ -2,7 +2,13 @@
  * API client — full-stack integration (Phases 2–6)
  */
 
-const API_BASE_URL = 'https://attendance-management-system-xm2e.onrender.com/api';
+const API_BASE_URL = (() => {
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://localhost:5000/api';
+  }
+  return 'https://attendance-management-system-xm2e.onrender.com/api';
+})();
 
 const Auth = {
   getToken() {
@@ -410,19 +416,36 @@ function setupNavbarProfile() {
       navRight.prepend(profileLink);
     }
 
-    if (!navRight.querySelector('[data-logout]')) {
-      const logoutBtn = document.createElement('a');
-      logoutBtn.href = '#';
-      logoutBtn.className = 'btn btn-ghost btn-sm navbar-logout-btn';
-      logoutBtn.dataset.logout = '';
-      logoutBtn.textContent = 'Logout';
-      navRight.append(logoutBtn);
-    }
   });
 
   const user = Auth.getUser();
   if (user) applyUserToLayout(user);
   wireLogoutLinks();
+}
+
+function setupSidebarIndicator() {
+  const nav = document.querySelector('.sidebar-nav');
+  if (!nav) return;
+
+  let indicator = nav.querySelector('.sidebar-active-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.className = 'sidebar-active-indicator';
+    indicator.setAttribute('aria-hidden', 'true');
+    nav.prepend(indicator);
+  }
+
+  const moveIndicator = () => {
+    const active = nav.querySelector('.sidebar-link.active');
+    if (!active || !indicator) return;
+    indicator.style.transform = `translateY(${active.offsetTop}px)`;
+    indicator.style.height = `${active.offsetHeight}px`;
+    indicator.style.opacity = '1';
+  };
+
+  moveIndicator();
+  requestAnimationFrame(moveIndicator);
+  window.addEventListener('resize', moveIndicator);
 }
 
 function setupSidebarCollapse() {
@@ -473,6 +496,10 @@ function setupSidebarCollapse() {
 
 const AppLayout = {
   async init(activePage) {
+    if (typeof UserPreferences !== 'undefined') {
+      UserPreferences.applyAll();
+    }
+
     await requireAuth();
 
     const sidebar = document.getElementById('sidebar');
@@ -485,6 +512,7 @@ const AppLayout = {
 
     setupNavbarProfile();
     setupSidebarCollapse();
+    setupSidebarIndicator();
 
     const closeSidebar = () => {
       sidebar?.classList.remove('open');

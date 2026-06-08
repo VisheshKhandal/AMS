@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Profile — Attendance Tracker</title>
+  <title>My Profile — AttendanceHub</title>
   <link rel="stylesheet" href="../css/global.css">
   <link rel="stylesheet" href="../css/profile.css">
+  <script src="../js/preferences.js"></script>
 </head>
 <body data-page="profile">
   <div class="app-layout">
     <aside class="sidebar" id="sidebar" aria-label="Main navigation">
       <div class="sidebar-logo">
-        <div class="sidebar-logo-icon">AT</div>
-        <span class="sidebar-logo-text">Attendance</span>
+        <div class="sidebar-logo-icon">AH</div>
+        <span class="sidebar-logo-text">AttendanceHub</span>
       </div>
       <nav class="sidebar-nav">
         <a href="dashboard.html" class="sidebar-link" data-nav="dashboard"><span class="sidebar-link-icon">📊</span> Dashboard</a>
@@ -40,7 +41,6 @@
             <div class="teacher-avatar">T</div>
             <span class="teacher-name">Teacher</span>
           </div>
-          <a href="#" class="btn btn-ghost btn-sm" data-logout>Logout</a>
         </div>
       </header>
 
@@ -395,9 +395,9 @@
         </div>
       </form>
     </div>
-    <footer class="edit-panel-footer" id="editPanelFooter" hidden>
-      <button type="button" class="btn btn-ghost" id="discardEditBtn">Discard</button>
-      <button type="button" class="btn btn-primary" id="saveProfileBtn">Save changes</button>
+    <footer class="edit-panel-footer" id="editPanelFooter">
+      <button type="button" class="btn btn-ghost" id="discardEditBtn" disabled>Discard</button>
+      <button type="button" class="btn btn-primary" id="saveProfileBtn" disabled>Save changes</button>
     </footer>
   </aside>
 

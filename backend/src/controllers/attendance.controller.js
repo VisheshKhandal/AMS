@@ -4,6 +4,7 @@ import Attendance from '../models/attendance.model.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import { broadcastDashboardUpdate } from '../ws/liveSync.js';
 /**
 PURPOSE : 
 “Normalize date to beginning of day.”
@@ -146,6 +147,8 @@ const markAttendance = asyncHandler(async (req, res) => {
     .populate('student', 'name rollNumber')
     .populate('class', 'className section')
     .populate('markedBy', 'username email');
+
+  broadcastDashboardUpdate({ reason: 'attendance-marked' });
 
   return res
     .status(wasUpdate ? 200 : 201)
