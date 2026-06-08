@@ -7,7 +7,7 @@ const API_BASE_URL = (() => {
   if (host === 'localhost' || host === '127.0.0.1') {
     return 'http://localhost:5000/api';
   }
-  return 'https://attendance-management-system-xm2e.onrender.com/api';
+  return 'https://ams-32ig.onrender.com/api';
 })();
 
 const Auth = {
